@@ -1,7 +1,7 @@
 # Hello K8s Logging on OrbStack
 
-OrbStack の Kubernetes 機能を使い、**1つの Docker イメージから2種類の Web サービスを起動する**ミニマル構成です。
-`ENTRYPOINT` + `CMD` パターンにより、同一イメージでも起動引数で振る舞いを切り替えられることを体験します。
+[hello-kubernetes](https://github.com/uraitakahito/hello-kubernetes) をベースに、**DaemonSet + Fluent Bit によるログ収集基盤**を追加した教材です。
+OrbStack の Kubernetes 機能を使い、Blue / Green 2種類の Nginx Web サービスのアクセスログを Fluent Bit が自動収集します。
 
 ## 前提条件
 
@@ -26,10 +26,18 @@ kubectl get nodes
 │   ├── index-blue.html        # Blue 版ページ
 │   └── index-green.html       # Green 版ページ
 ├── k8s/
-│   ├── deployment-blue.yaml   # Blue Deployment（args: ["blue"]）
-│   ├── deployment-green.yaml  # Green Deployment（args: ["green"]）
-│   ├── service-blue.yaml      # Blue Service（NodePort 30080）
-│   └── service-green.yaml     # Green Service（NodePort 30081）
+│   ├── app/                   # アプリケーション マニフェスト
+│   │   ├── deployment-blue.yaml
+│   │   ├── deployment-green.yaml
+│   │   ├── service-blue.yaml
+│   │   └── service-green.yaml
+│   └── logging/               # ログ基盤 マニフェスト
+│       ├── namespace.yaml
+│       ├── service-account.yaml
+│       ├── cluster-role.yaml
+│       ├── cluster-role-binding.yaml
+│       ├── configmap.yaml
+│       └── daemonset.yaml
 └── README.md
 ```
 
@@ -37,16 +45,14 @@ kubectl get nodes
 
 ### 1. Docker イメージをビルド
 
-イメージは1つだけビルドします。Blue / Green 両方の HTML が含まれます。
-
 ```bash
 docker build -t hello-k8s-logging-web:latest ./app
 ```
 
-### 2. Kubernetes にデプロイ
+### 2. アプリケーションをデプロイ
 
 ```bash
-kubectl apply -f k8s/
+kubectl apply -f k8s/app/
 ```
 
 Pod が Running になるまで待ちます。
@@ -59,8 +65,6 @@ Blue 2つ、Green 2つの計4 Pod が起動します。
 
 ### 3. 動作確認
 
-**方法 A: NodePort でアクセス**
-
 ```bash
 # Blue（ポート 30080）
 curl http://localhost:30080
@@ -69,25 +73,88 @@ curl http://localhost:30080
 curl http://localhost:30081
 ```
 
-**方法 B: OrbStack のドメインでアクセス（推奨）**
-
-OrbStack では Service 名でアクセスできます。
-この方法は Service の ClusterIP に直接ルーティングされるため、Service の `port: 8080` を指定してアクセスします。
-方法 A の `:30080` / `:30081` は NodePort（ノード上の公開ポート）なので、ここでは使いません。
+OrbStack では Service 名でもアクセスできます。
 
 ```bash
-# Blue
 curl http://hello-k8s-logging-blue.default.svc.cluster.local:8080
-
-# Green
 curl http://hello-k8s-logging-green.default.svc.cluster.local:8080
 ```
 
-またはブラウザで上記 URL を開きます。
+### 4. ログ基盤をデプロイ
 
-## 学習ポイント: ENTRYPOINT と CMD
+RBAC → ConfigMap → DaemonSet の順にデプロイします。
 
-### Kubernetes レベル
+```bash
+# Namespace と RBAC
+kubectl apply -f k8s/logging/namespace.yaml
+kubectl apply -f k8s/logging/service-account.yaml
+kubectl apply -f k8s/logging/cluster-role.yaml
+kubectl apply -f k8s/logging/cluster-role-binding.yaml
+
+# Fluent Bit 設定と DaemonSet
+kubectl apply -f k8s/logging/configmap.yaml
+kubectl apply -f k8s/logging/daemonset.yaml
+```
+
+Fluent Bit Pod が起動したことを確認します。
+
+```bash
+kubectl get daemonset fluent-bit -n logging
+kubectl get pods -n logging
+```
+
+### 5. ログ収集の確認
+
+トラフィックを発生させてから Fluent Bit のログを確認します。
+
+```bash
+curl http://localhost:30080
+curl http://localhost:30081
+
+kubectl logs -n logging -l app=fluent-bit --tail=10
+```
+
+nginx のアクセスログが JSON 形式で表示され、Kubernetes メタデータ（Pod 名、Namespace、ラベル等）が付与されていることを確認できます。
+
+## 学習ポイント
+
+### DaemonSet とログ収集
+
+DaemonSet はクラスタの**各ノードに1つずつ Pod を配置**するリソースです。
+Deployment が「N 個のレプリカをどこかに配置」するのに対し、DaemonSet は「全ノードに1つずつ」を保証します。
+
+```bash
+# DaemonSet の状態を確認（DESIRED = ノード数 = READY）
+kubectl get daemonset fluent-bit -n logging
+```
+
+ログ収集エージェントは各ノードのログファイルを読む必要があるため、DaemonSet が最適です。
+
+### Fluent Bit のパイプライン
+
+```
+[INPUT] tail → [FILTER] kubernetes → [OUTPUT] stdout
+```
+
+| ステージ | 役割 |
+|---------|------|
+| INPUT (tail) | ノード上の `/var/log/containers/*.log` を tail で読み取り |
+| FILTER (kubernetes) | K8s API に問い合わせ、Pod 名・Namespace・ラベル等のメタデータを付与 |
+| OUTPUT (stdout) | 収集したログを標準出力に表示（`kubectl logs` で確認可能） |
+
+### RBAC（Role-Based Access Control）
+
+Fluent Bit が Kubernetes API からメタデータを取得するには、適切な権限が必要です。
+
+| リソース | 役割 |
+|---------|------|
+| ServiceAccount | Fluent Bit Pod の認証 ID |
+| ClusterRole | pods と namespaces への get/list/watch 権限 |
+| ClusterRoleBinding | ServiceAccount と ClusterRole の紐付け |
+
+ClusterRole（Namespace を横断する権限）を使うのは、Fluent Bit が全 Namespace のログを収集するためです。
+
+### ENTRYPOINT と CMD
 
 ```yaml
 spec:
@@ -97,59 +164,32 @@ spec:
       args: ["green"]    # ← Dockerfile の CMD を上書き
 ```
 
-K8s の `args` は Docker の `CMD` に対応します。
-`command` は `ENTRYPOINT` に対応しますが、今回は ENTRYPOINT はそのまま使うため指定しません。
-
 | Docker       | Kubernetes | 本プロジェクトでの値          |
 |--------------|------------|-------------------------------|
 | `ENTRYPOINT` | `command`  | `/docker-entrypoint.sh`       |
 | `CMD`        | `args`     | `["blue"]` or `["green"]`     |
 
-## セルフヒーリングを体験する
-
-各 Deployment は `replicas: 2` で Pod を維持します。
-
-まず、variant ラベルで Pod を確認します。
-
-```bash
-kubectl get pods -l variant=blue
-kubectl get pods -l variant=green
-```
-
-Blue の Pod を1つ削除してみます。
-
-```bash
-kubectl delete pod -l variant=blue --field-selector=status.phase=Running --grace-period=0 | head -1
-```
-
-別ターミナルで監視すると、新しい Pod が即座に作成される様子を観察できます。
-
-```bash
-kubectl get pods -l variant=blue -w
-```
-
-全ての Pod を削除しても、Deployment が `replicas: 2` の状態に自動復旧します。
-
-```bash
-kubectl delete pods -l app=hello-k8s-logging
-kubectl get pods -w
-```
-
 ## クリーンアップ
 
 ```bash
-kubectl delete -f k8s/
-```
+# ログ基盤の削除
+kubectl delete -f k8s/logging/daemonset.yaml
+kubectl delete -f k8s/logging/configmap.yaml
+kubectl delete -f k8s/logging/cluster-role-binding.yaml
+kubectl delete -f k8s/logging/cluster-role.yaml
+kubectl delete -f k8s/logging/service-account.yaml
+kubectl delete -f k8s/logging/namespace.yaml
 
-Docker イメージも不要であれば削除します。
+# アプリケーションの削除
+kubectl delete -f k8s/app/
 
-```bash
+# Docker イメージの削除
 docker rmi hello-k8s-logging-web:latest
 ```
 
 ## トラブルシューティング
 
-### Pod が起動しない
+### App の Pod が起動しない
 
 ```bash
 kubectl describe pod -l app=hello-k8s-logging
@@ -161,18 +201,17 @@ kubectl logs -l app=hello-k8s-logging
 `imagePullPolicy: Never` が設定されているか確認してください。
 ローカルでイメージがビルド済みか `docker images | grep hello-k8s-logging-web` で確認できます。
 
-### NodePort に接続できない
+### Fluent Bit がログを収集しない
 
 ```bash
-kubectl get svc
-```
+# Fluent Bit Pod の状態確認
+kubectl get pods -n logging
+kubectl logs -n logging -l app=fluent-bit
 
-Blue は `8080:30080/TCP`、Green は `8080:30081/TCP` と表示されていることを確認してください。
+# ConfigMap の内容確認
+kubectl describe configmap fluent-bit-config -n logging
 
-### entrypoint のエラー
-
-Pod のログに `Error: unknown variant` と出ている場合、`args` の値が `blue` または `green` であることを確認してください。
-
-```bash
-kubectl logs -l app=hello-k8s-logging
+# RBAC の確認
+kubectl describe clusterrole fluent-bit
+kubectl describe clusterrolebinding fluent-bit
 ```
