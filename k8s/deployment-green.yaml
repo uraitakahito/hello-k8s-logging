@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-k8s-logging-green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-k8s-logging
+      variant: green
+  template:
+    metadata:
+      labels:
+        app: hello-k8s-logging
+        variant: green
+    spec:
+      containers:
+        - name: web-server
+          image: hello-k8s-logging-web:latest
+          imagePullPolicy: Never
+          args: ["green"]
+          ports:
+            - containerPort: 80
