@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fluent-bit-config
+  name: fb-config
   namespace: logging
 data:
   fluent-bit.conf: |
@@ -14,7 +14,7 @@ data:
         Name         tail
         Tag          kube.*
         Path         /var/log/containers/*.log
-        Exclude_Path /var/log/containers/*fluent-bit*.log
+        Exclude_Path /var/log/containers/*log-collector*.log
         Parser       docker
         Refresh_Interval 10
         Read_From_Head On
