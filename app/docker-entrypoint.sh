@@ -9,5 +9,5 @@ if [ ! -f "$SRC" ]; then
   exit 1
 fi
 
-cp "$SRC" /usr/share/nginx/html/index.html
+ln -sf "$SRC" /usr/share/nginx/html/index.html
 exec nginx -g 'daemon off;'
