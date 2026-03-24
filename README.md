@@ -71,7 +71,7 @@ curl http://green.hello-k8s-logging.svc.cluster.local:8080
 
 ### 4. ログ収集の確認
 
-トラフィックを発生させてから Fluent Bit サイドカーのログを確認します。
+トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
 curl http://localhost:30080
@@ -83,8 +83,6 @@ kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 # Green Pod のログ収集サイドカーを確認
 kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
-
-nginx のアクセスログが JSON 形式で表示されることを確認できます。
 
 ## 学習ポイント
 
