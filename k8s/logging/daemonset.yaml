@@ -1,22 +1,21 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: fluent-bit
-  namespace: logging
+  name: log-collector
   labels:
-    app: fluent-bit
+    app: log-collector
 spec:
   selector:
     matchLabels:
-      app: fluent-bit
+      app: log-collector
   template:
     metadata:
       labels:
-        app: fluent-bit
+        app: log-collector
     spec:
-      serviceAccountName: fluent-bit
+      serviceAccountName: fb-service-account
       containers:
-        - name: fluent-bit
+        - name: fb-container
           image: fluent/fluent-bit:latest
           volumeMounts:
             - name: varlog
@@ -36,4 +35,4 @@ spec:
             path: /var/lib/docker/containers
         - name: config
           configMap:
-            name: fluent-bit-config
+            name: fb-config
