@@ -78,10 +78,10 @@ curl http://localhost:30080
 curl http://localhost:30081
 
 # Blue Pod のログ収集サイドカーを確認
-kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=10
+kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 
 # Green Pod のログ収集サイドカーを確認
-kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=10
+kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
 
 nginx のアクセスログが JSON 形式で表示されることを確認できます。
