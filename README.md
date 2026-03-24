@@ -134,6 +134,47 @@ resources:
   - ...
 ```
 
+### Liveness / Readiness Probe
+
+Pod のヘルスチェックには 2 種類の Probe を使います。
+
+| Probe | 役割 | 失敗時の動作 |
+|-------|------|-------------|
+| Liveness | コンテナが生きているか | Pod を再起動 |
+| Readiness | トラフィックを受ける準備ができているか | Service のエンドポイントから除外 |
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 3
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 1
+  periodSeconds: 5
+```
+
+#### Self-healing を体験する
+
+Liveness Probe が失敗すると K8s が自動で Pod を再起動します。
+
+```bash
+# Pod 名を取得
+POD=$(kubectl get pods -n hello-k8s-logging -l variant=blue -o jsonpath='{.items[0].metadata.name}')
+
+# index.html を削除して Liveness Probe を失敗させる
+kubectl exec -n hello-k8s-logging $POD -- rm /usr/share/nginx/html/index.html
+
+# Pod の再起動を観察（RESTARTS カウントが増える）
+kubectl get pods -n hello-k8s-logging -w
+```
+
+再起動後、コンテナは ENTRYPOINT から実行されるため index.html が再作成され、自動的に復旧します。
+
 ### DaemonSet とログ収集
 
 DaemonSet はクラスタの**各ノードに1つずつ Pod を配置**するリソースです。
