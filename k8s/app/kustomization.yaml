@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: hello-k8s-logging
 resources:
   - namespace.yaml
+  - configmap.yaml
   - deployment-blue.yaml
   - deployment-green.yaml
   - service-blue.yaml

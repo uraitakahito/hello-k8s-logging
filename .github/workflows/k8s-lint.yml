@@ -23,6 +23,3 @@ jobs:
 
       - name: Validate app manifests
         run: kustomize build k8s/app/ | kubeconform -strict -summary
-
-      - name: Validate logging manifests
-        run: kustomize build k8s/logging/ | kubeconform -strict -summary

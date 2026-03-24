@@ -22,6 +22,9 @@ spec:
           args: ["blue"]
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log/nginx
           livenessProbe:
             httpGet:
               path: /healthz
@@ -34,3 +37,17 @@ spec:
               port: 80
             initialDelaySeconds: 1
             periodSeconds: 5
+        - name: log-collector
+          image: fluent/fluent-bit:4.0
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log/nginx
+              readOnly: true
+            - name: fb-config
+              mountPath: /fluent-bit/etc
+      volumes:
+        - name: varlog
+          emptyDir: {}
+        - name: fb-config
+          configMap:
+            name: fb-config
