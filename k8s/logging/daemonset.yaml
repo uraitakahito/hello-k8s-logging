@@ -16,7 +16,7 @@ spec:
       serviceAccountName: fb-service-account
       containers:
         - name: fb-container
-          image: fluent/fluent-bit:latest
+          image: fluent/fluent-bit:4.0
           volumeMounts:
             - name: varlog
               mountPath: /var/log

@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  # OrbStack: http://hello-k8s-logging-green.default.svc.cluster.local:8080
-  name: hello-k8s-logging-green
+  # OrbStack: http://green.hello-k8s-logging.svc.cluster.local:8080
+  name: green
 spec:
   type: NodePort
   selector:
