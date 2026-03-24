@@ -149,9 +149,6 @@ kubectl exec -n hello-k8s-logging $POD -c web-server -- nginx -s stop
 kubectl get pods -n hello-k8s-logging -w
 ```
 
-nginx が停止すると `/healthz` への HTTP チェックが失敗し、K8s がコンテナを再起動します。
-再起動後、コンテナは ENTRYPOINT から実行されるため nginx が再起動し、自動的に復旧します。
-
 ### サイドカーパターンとログ収集
 
 サイドカーパターンでは、アプリケーションコンテナと同じ Pod 内にログ収集コンテナを配置します。
