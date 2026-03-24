@@ -13,6 +13,7 @@ data:
         Name         tail
         Tag          kube.*
         Path         /var/log/containers/*.log
+        # Fluent Bit 自身のログを除外し、読み取り→出力→再読み取りの無限ループを防止
         Exclude_Path /var/log/containers/*log-collector*.log
         Parser       docker
         Refresh_Interval 10

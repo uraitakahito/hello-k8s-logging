@@ -1,4 +1,5 @@
 FROM nginx:1.28-alpine
+COPY default.conf /etc/nginx/conf.d/default.conf
 COPY index-blue.html /usr/share/nginx/html/index-blue.html
 COPY index-green.html /usr/share/nginx/html/index-green.html
 COPY docker-entrypoint.sh /docker-entrypoint.sh
