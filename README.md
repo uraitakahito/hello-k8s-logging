@@ -79,8 +79,8 @@ curl http://localhost:30081
 OrbStack では Service 名でもアクセスできます。
 
 ```bash
-curl http://hello-k8s-logging-blue.hello-k8s-logging.svc.cluster.local:8080
-curl http://hello-k8s-logging-green.hello-k8s-logging.svc.cluster.local:8080
+curl http://blue.hello-k8s-logging.svc.cluster.local:8080
+curl http://green.hello-k8s-logging.svc.cluster.local:8080
 ```
 
 ### 4. ログ基盤をデプロイ
