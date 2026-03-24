@@ -27,11 +27,14 @@ kubectl get nodes
 │   └── index-green.html       # Green 版ページ
 ├── k8s/
 │   ├── app/                   # アプリケーション マニフェスト
+│   │   ├── kustomization.yaml # Kustomize: Namespace 注入 + 適用順序
+│   │   ├── namespace.yaml     # hello-k8s-logging Namespace
 │   │   ├── deployment-blue.yaml
 │   │   ├── deployment-green.yaml
 │   │   ├── service-blue.yaml
 │   │   └── service-green.yaml
 │   └── logging/               # ログ基盤 マニフェスト
+│       ├── kustomization.yaml # Kustomize: Namespace 注入 + 適用順序
 │       ├── namespace.yaml
 │       ├── service-account.yaml
 │       ├── cluster-role.yaml
@@ -52,13 +55,13 @@ docker build -t hello-k8s-logging-web:latest ./app
 ### 2. アプリケーションをデプロイ
 
 ```bash
-kubectl apply -f k8s/app/
+kubectl apply -k k8s/app/
 ```
 
 Pod が Running になるまで待ちます。
 
 ```bash
-kubectl get pods -w
+kubectl get pods -n hello-k8s-logging -w
 ```
 
 Blue 2つ、Green 2つの計4 Pod が起動します。
@@ -76,24 +79,14 @@ curl http://localhost:30081
 OrbStack では Service 名でもアクセスできます。
 
 ```bash
-curl http://hello-k8s-logging-blue.default.svc.cluster.local:8080
-curl http://hello-k8s-logging-green.default.svc.cluster.local:8080
+curl http://hello-k8s-logging-blue.hello-k8s-logging.svc.cluster.local:8080
+curl http://hello-k8s-logging-green.hello-k8s-logging.svc.cluster.local:8080
 ```
 
 ### 4. ログ基盤をデプロイ
 
-RBAC → ConfigMap → DaemonSet の順にデプロイします。
-
 ```bash
-# Namespace と RBAC
-kubectl apply -f k8s/logging/namespace.yaml
-kubectl apply -f k8s/logging/service-account.yaml
-kubectl apply -f k8s/logging/cluster-role.yaml
-kubectl apply -f k8s/logging/cluster-role-binding.yaml
-
-# Fluent Bit 設定と DaemonSet
-kubectl apply -f k8s/logging/configmap.yaml
-kubectl apply -f k8s/logging/daemonset.yaml
+kubectl apply -k k8s/logging/
 ```
 
 Fluent Bit Pod が起動したことを確認します。
@@ -117,6 +110,29 @@ kubectl logs -n logging -l app=log-collector --tail=10
 nginx のアクセスログが JSON 形式で表示され、Kubernetes メタデータ（Pod 名、Namespace、ラベル等）が付与されていることを確認できます。
 
 ## 学習ポイント
+
+### Kustomize と `kubectl apply -k`
+
+本プロジェクトでは各ディレクトリに `kustomization.yaml` を配置し、`kubectl apply -k` で一括デプロイしています。
+
+```bash
+# -f: ディレクトリ内のマニフェストを個別に適用（順序保証なし）
+kubectl apply -f k8s/app/
+
+# -k: Kustomize でビルドしてから適用（Namespace 注入 + 順序保証）
+kubectl apply -k k8s/app/
+```
+
+`kustomization.yaml` の `namespace` フィールドで Namespace を一括注入するため、個々のマニフェストに `namespace:` を書く必要がありません。
+
+```yaml
+# k8s/app/kustomization.yaml
+namespace: hello-k8s-logging    # ← 全リソースに注入される
+resources:
+  - namespace.yaml              # Namespace は最初にリストする
+  - deployment-blue.yaml
+  - ...
+```
 
 ### DaemonSet とログ収集
 
@@ -173,15 +189,10 @@ spec:
 
 ```bash
 # ログ基盤の削除
-kubectl delete -f k8s/logging/daemonset.yaml
-kubectl delete -f k8s/logging/configmap.yaml
-kubectl delete -f k8s/logging/cluster-role-binding.yaml
-kubectl delete -f k8s/logging/cluster-role.yaml
-kubectl delete -f k8s/logging/service-account.yaml
-kubectl delete -f k8s/logging/namespace.yaml
+kubectl delete -k k8s/logging/
 
 # アプリケーションの削除
-kubectl delete -f k8s/app/
+kubectl delete -k k8s/app/
 
 # Docker イメージの削除
 docker rmi hello-k8s-logging-web:latest
@@ -192,8 +203,8 @@ docker rmi hello-k8s-logging-web:latest
 ### App の Pod が起動しない
 
 ```bash
-kubectl describe pod -l app=hello-k8s-logging
-kubectl logs -l app=hello-k8s-logging
+kubectl describe pod -n hello-k8s-logging -l app=hello-k8s-logging
+kubectl logs -n hello-k8s-logging -l app=hello-k8s-logging
 ```
 
 ### イメージが見つからない（ErrImagePull）

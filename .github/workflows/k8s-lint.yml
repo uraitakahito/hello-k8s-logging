@@ -13,10 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install kubeconform
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
-            | tar xz -C /usr/local/bin
+      - uses: yokawasa/action-setup-kube-tools@v0.13.3
+        with:
+          setup-tools: |
+            kustomize
+            kubeconform
+          kustomize: '5.7.1'
+          kubeconform: '0.7.0'
 
-      - name: Validate manifests
-        run: kubeconform -strict -summary k8s/app/ k8s/logging/
+      - name: Validate app manifests
+        run: kustomize build k8s/app/ | kubeconform -strict -summary
+
+      - name: Validate logging manifests
+        run: kustomize build k8s/logging/ | kubeconform -strict -summary

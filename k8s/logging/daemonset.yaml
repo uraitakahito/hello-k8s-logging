@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: log-collector
-  namespace: logging
   labels:
     app: log-collector
 spec:
