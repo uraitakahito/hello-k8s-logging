@@ -142,14 +142,15 @@ Liveness Probe が失敗すると K8s が自動で Pod を再起動します。
 # Pod 名を取得
 POD=$(kubectl get pods -n hello-k8s-logging -l variant=blue -o jsonpath='{.items[0].metadata.name}')
 
-# index.html を削除して Liveness Probe を失敗させる
-kubectl exec -n hello-k8s-logging $POD -c web-server -- rm /usr/share/nginx/html/index.html
+# nginx を停止して Liveness Probe を失敗させる
+kubectl exec -n hello-k8s-logging $POD -c web-server -- nginx -s stop
 
 # Pod の再起動を観察（RESTARTS カウントが増える）
 kubectl get pods -n hello-k8s-logging -w
 ```
 
-再起動後、コンテナは ENTRYPOINT から実行されるため index.html が再作成され、自動的に復旧します。
+nginx が停止すると `/healthz` への HTTP チェックが失敗し、K8s がコンテナを再起動します。
+再起動後、コンテナは ENTRYPOINT から実行されるため nginx が再起動し、自動的に復旧します。
 
 ### サイドカーパターンとログ収集
 
