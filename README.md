@@ -71,20 +71,18 @@ curl http://green.hello-k8s-logging.svc.cluster.local:8080
 
 ### 4. ログ収集の確認
 
-トラフィックを発生させてから Fluent Bit サイドカーのログを確認します。
+トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
 curl http://localhost:30080
 curl http://localhost:30081
 
 # Blue Pod のログ収集サイドカーを確認
-kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=10
+kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 
 # Green Pod のログ収集サイドカーを確認
-kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=10
+kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
-
-nginx のアクセスログが JSON 形式で表示されることを確認できます。
 
 ## 学習ポイント
 
@@ -144,14 +142,12 @@ Liveness Probe が失敗すると K8s が自動で Pod を再起動します。
 # Pod 名を取得
 POD=$(kubectl get pods -n hello-k8s-logging -l variant=blue -o jsonpath='{.items[0].metadata.name}')
 
-# index.html を削除して Liveness Probe を失敗させる
-kubectl exec -n hello-k8s-logging $POD -c web-server -- rm /usr/share/nginx/html/index.html
+# nginx を停止して Liveness Probe を失敗させる
+kubectl exec -n hello-k8s-logging $POD -c web-server -- nginx -s stop
 
 # Pod の再起動を観察（RESTARTS カウントが増える）
 kubectl get pods -n hello-k8s-logging -w
 ```
-
-再起動後、コンテナは ENTRYPOINT から実行されるため index.html が再作成され、自動的に復旧します。
 
 ### サイドカーパターンとログ収集
 
