@@ -1,6 +1,6 @@
 # Hello K8s Logging on OrbStack
 
-[hello-k8s](https://github.com/uraitakahito/hello-k8s) をベースに、**サイドカー + Fluent Bit によるログ収集基盤**を追加した教材です。
+[hello-k8s](https://github.com/uraitakahito/hello-k8s) をベースに、**サイドカー + Fluent Bit によるログ収集基盤** を追加した教材です。
 OrbStack の Kubernetes 機能を使い、Blue / Green 2種類の Nginx Web サービスのアクセスログを Fluent Bit サイドカーが自動収集します。
 
 ## 前提条件
