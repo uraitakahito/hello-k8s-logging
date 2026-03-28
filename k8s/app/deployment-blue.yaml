@@ -19,7 +19,9 @@ spec:
         - name: web-server
           image: hello-k8s-logging-web:latest
           imagePullPolicy: Never
-          args: ["blue"]
+          env:
+            - name: VARIANT
+              value: "blue"
           ports:
             - containerPort: 80
           volumeMounts:
