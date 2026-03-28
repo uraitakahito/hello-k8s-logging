@@ -15,6 +15,12 @@ data:
         # Fluent Bit の起動が nginx より遅れても、起動前に書き込まれたログを取りこぼさない
         Read_From_Head On
 
+    [INPUT]
+        Name         tail
+        Tag          nginx.error
+        Path         /var/log/nginx/error.log
+        Read_From_Head On
+
     [OUTPUT]
         Name         stdout
         Match        *
