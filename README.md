@@ -79,7 +79,10 @@ curl http://green.hello-k8s-logging.svc.cluster.local:8080
 トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
+# Blue（ポート 30080）
 curl http://localhost:30080
+
+# Green（ポート 30081）
 curl http://localhost:30081
 
 # Blue Pod のログ収集サイドカーを確認
