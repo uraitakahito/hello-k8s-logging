@@ -22,4 +22,4 @@ jobs:
           kubeconform: '0.7.0'
 
       - name: Validate app manifests
-        run: kustomize build k8s/app/ | kubeconform -strict -summary
+        run: kustomize build k8s/ | kubeconform -strict -summary
