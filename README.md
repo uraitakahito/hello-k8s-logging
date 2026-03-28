@@ -215,13 +215,16 @@ spec:
   containers:
     - name: web-server
       image: hello-k8s-logging-web:latest
-      args: ["green"]    # ← Dockerfile の CMD を上書き
+      env:
+        - name: VARIANT
+          value: "green"    # ← 環境変数でバリアントを切り替え
 ```
 
-| Docker       | Kubernetes | 本プロジェクトでの値          |
-|--------------|------------|-------------------------------|
-| `ENTRYPOINT` | `command`  | `/docker-entrypoint.sh`       |
-| `CMD`        | `args`     | `["blue"]` or `["green"]`     |
+| Docker       | Kubernetes | 本プロジェクトでの値                     |
+|--------------|------------|------------------------------------------|
+| `ENTRYPOINT` | `command`  | `/docker-entrypoint.sh`                  |
+| `CMD`        | `args`     | `["nginx", "-g", "daemon off;"]`         |
+| (なし)       | `env`      | `VARIANT=blue` or `VARIANT=green`        |
 
 ## クリーンアップ
 

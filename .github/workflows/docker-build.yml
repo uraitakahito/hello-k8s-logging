@@ -16,18 +16,18 @@ jobs:
 
       - name: Test blue variant
         run: |
-          docker run -d --name test-blue -p 8081:80 hello-k8s-logging-web:ci blue
+          docker run -d --name test-blue -p 8081:80 -e VARIANT=blue hello-k8s-logging-web:ci
           sleep 2
           curl -sf http://localhost:8081 | grep -q "Hello, Blue!"
           docker stop test-blue
 
       - name: Test green variant
         run: |
-          docker run -d --name test-green -p 8082:80 hello-k8s-logging-web:ci green
+          docker run -d --name test-green -p 8082:80 -e VARIANT=green hello-k8s-logging-web:ci
           sleep 2
           curl -sf http://localhost:8082 | grep -q "Hello, Green!"
           docker stop test-green
 
       - name: Test invalid variant fails
         run: |
-          ! docker run --rm hello-k8s-logging-web:ci invalid
+          ! docker run --rm -e VARIANT=invalid hello-k8s-logging-web:ci

@@ -5,4 +5,4 @@ COPY index-green.html /usr/share/nginx/html/index-green.html
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["blue"]
+CMD ["nginx", "-g", "daemon off;"]
