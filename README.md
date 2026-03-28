@@ -101,7 +101,7 @@ kubectl apply -k k8s/
 # k8s/kustomization.yaml
 namespace: hello-k8s-logging    # ← 全リソースに注入される
 resources:
-  - namespace.yaml              # Namespace は最初にリストする
+  - namespace.yaml
   - configmap.yaml
   - deployment-blue.yaml
   - ...

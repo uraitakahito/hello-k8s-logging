@@ -1,6 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-# Namespace は最初に作成される必要がある
+# 適用順は resources の記載順ではなく Kind ベースの組み込みソート順（legacy sort）で決まる
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/sortoptions/
 namespace: hello-k8s-logging
 resources:
   - namespace.yaml
