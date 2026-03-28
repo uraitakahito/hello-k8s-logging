@@ -50,8 +50,6 @@ Pod が Running になるまで待ちます。各 Pod には web-server と log-
 kubectl get pods -n hello-k8s-logging -w
 ```
 
-Blue 2つ、Green 2つの計4 Pod が起動します。
-
 ### 3. 動作確認
 
 ```bash
