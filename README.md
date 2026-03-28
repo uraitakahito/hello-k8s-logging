@@ -39,6 +39,8 @@ docker build -t hello-k8s-logging-web ./app
 
 ### 2. アプリケーションをデプロイ
 
+-k で Kustomize で変換を行い、Kindベースのソート順で適用:
+
 ```bash
 kubectl apply -k k8s/
 ```
@@ -60,6 +62,12 @@ curl http://localhost:30081
 ```
 
 OrbStack では Service 名でもアクセスできます。
+
+```
+<Service名>.<Namespace名>.svc.cluster.local
+```
+
+この方法は Service の ClusterIP に直接ルーティングされるため、Service の port: 8080 を指定してアクセスします。
 
 ```bash
 curl http://blue.hello-k8s-logging.svc.cluster.local:8080
