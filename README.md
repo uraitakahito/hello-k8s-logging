@@ -85,10 +85,10 @@ curl http://localhost:30080
 # Green（ポート 30081）
 curl http://localhost:30081
 
-# Blue Pod のログ収集サイドカーを確認
+# Blue Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 
-# Green Pod のログ収集サイドカーを確認
+# Green Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
 
