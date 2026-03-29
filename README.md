@@ -39,6 +39,8 @@ docker build -t hello-k8s-logging-web ./app
 
 ### 2. アプリケーションをデプロイ
 
+-k で Kustomize で変換を行い、Kindベースのソート順で適用:
+
 ```bash
 kubectl apply -k k8s/
 ```
@@ -61,6 +63,12 @@ curl http://localhost:30081
 
 OrbStack では Service 名でもアクセスできます。
 
+```
+<Service名>.<Namespace名>.svc.cluster.local
+```
+
+この方法は Service の ClusterIP に直接ルーティングされるため、Service の port: 8080 を指定してアクセスします。
+
 ```bash
 curl http://blue.hello-k8s-logging.svc.cluster.local:8080
 curl http://green.hello-k8s-logging.svc.cluster.local:8080
@@ -68,16 +76,39 @@ curl http://green.hello-k8s-logging.svc.cluster.local:8080
 
 ### 4. ログ収集の確認
 
+各 Pod には 2 つのコンテナがあり、それぞれ独立した stdout を持ちます。`kubectl logs` は指定したコンテナの stdout を表示するコマンドです。
+
+```
+deploy-blue (replicas: 2)
+├── Pod-1
+│   ├── web-server     → stdout
+│   └── log-collector  → stdout  ← kubectl logs -l variant=blue -c log-collector で表示
+└── Pod-2
+    ├── web-server     → stdout
+    └── log-collector  → stdout  ← kubectl logs -l variant=blue -c log-collector で表示
+
+deploy-green (replicas: 2)
+├── Pod-1
+│   ├── web-server     → stdout
+│   └── log-collector  → stdout
+└── Pod-2
+    ├── web-server     → stdout
+    └── log-collector  → stdout
+```
+
 トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
+# Blue（ポート 30080）
 curl http://localhost:30080
+
+# Green（ポート 30081）
 curl http://localhost:30081
 
-# Blue Pod のログ収集サイドカーを確認
+# Blue Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 
-# Green Pod のログ収集サイドカーを確認
+# Green Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
 
