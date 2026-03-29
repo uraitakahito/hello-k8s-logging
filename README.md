@@ -76,6 +76,26 @@ curl http://green.hello-k8s-logging.svc.cluster.local:8080
 
 ### 4. ログ収集の確認
 
+各 Pod には 2 つのコンテナがあり、それぞれ独立した stdout を持ちます。`kubectl logs` は指定したコンテナの stdout を表示するコマンドです。
+
+```
+deploy-blue (replicas: 2)
+├── Pod-1
+│   ├── web-server     → stdout
+│   └── log-collector  → stdout  ← kubectl logs -l variant=blue -c log-collector で表示
+└── Pod-2
+    ├── web-server     → stdout
+    └── log-collector  → stdout  ← kubectl logs -l variant=blue -c log-collector で表示
+
+deploy-green (replicas: 2)
+├── Pod-1
+│   ├── web-server     → stdout
+│   └── log-collector  → stdout
+└── Pod-2
+    ├── web-server     → stdout
+    └── log-collector  → stdout
+```
+
 トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
