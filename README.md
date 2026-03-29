@@ -54,10 +54,8 @@ kubectl get pods -n hello-k8s-logging -w
 ### 3. 動作確認
 
 ```bash
-# Blue（ポート 30080）
+# Blue（ポート 30080）, Green（ポート 30081）
 curl http://localhost:30080
-
-# Green（ポート 30081）
 curl http://localhost:30081
 ```
 
@@ -99,10 +97,8 @@ deploy-green (replicas: 2)
 curlやブラウザでトラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
-# Blue Pod 内の log-collector コンテナの stdout を表示
+# Blue,Green Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
-
-# Green Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 ```
 
