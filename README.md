@@ -96,15 +96,9 @@ deploy-green (replicas: 2)
     └── log-collector  → stdout
 ```
 
-トラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
+curlやブラウザでトラフィックを発生させてから Fluent Bit サイドカーのログをtailすると、nginxのアクセスログをJSON形式で確認できます。
 
 ```bash
-# Blue（ポート 30080）
-curl http://localhost:30080
-
-# Green（ポート 30081）
-curl http://localhost:30081
-
 # Blue Pod 内の log-collector コンテナの stdout を表示
 kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector --tail=3
 
