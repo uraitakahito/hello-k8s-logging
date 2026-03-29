@@ -118,19 +118,6 @@ kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 
 サイドカーパターンでは、アプリケーションコンテナと同じ Pod 内にログ収集コンテナを配置します。
 
-```
-┌─ Pod ──────────────────────────────────┐
-│                                         │
-│  [web-server]                           │
-│    nginx → /var/log/nginx/access.log    │
-│              ↓ (emptyDir 共有ボリューム) │
-│  [log-collector]                        │
-│    Fluent Bit ← tail access.log        │
-│              ↓                          │
-│           stdout (kubectl logs で確認)  │
-└─────────────────────────────────────────┘
-```
-
 #### なぜ Fluent Bit の設定に ConfigMap を使うのか
 
 Fluent Bit の設定ファイル (`fluent-bit.conf`) は静的ですが、イメージに埋め込まず ConfigMap で渡しています。
