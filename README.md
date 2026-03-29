@@ -204,26 +204,3 @@ kubectl delete -k k8s/
 docker rmi hello-k8s-logging-web
 ```
 
-## トラブルシューティング
-
-### App の Pod が起動しない
-
-```bash
-kubectl describe pod -n hello-k8s-logging -l app=hello-k8s-logging
-kubectl logs -n hello-k8s-logging -l app=hello-k8s-logging -c web-server
-```
-
-### イメージが見つからない（ErrImagePull）
-
-`imagePullPolicy: Never` が設定されているか確認してください。
-ローカルでイメージがビルド済みか `docker images | grep hello-k8s-logging-web` で確認できます。
-
-### Fluent Bit がログを収集しない
-
-```bash
-# Fluent Bit サイドカーの状態確認
-kubectl logs -n hello-k8s-logging -l variant=blue -c log-collector
-
-# ConfigMap の内容確認
-kubectl describe configmap fb-config -n hello-k8s-logging
-```
