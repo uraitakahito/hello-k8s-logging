@@ -114,85 +114,9 @@ kubectl logs -n hello-k8s-logging -l variant=green -c log-collector --tail=3
 
 ## 学習ポイント
 
-### Kustomize と `kubectl apply -k`
-
-本プロジェクトでは `kustomization.yaml` を配置し、`kubectl apply -k` で一括デプロイしています。
-
-```bash
-# -f: ディレクトリ内のマニフェストを個別に適用（順序保証なし）
-kubectl apply -f k8s/
-
-# -k: Kustomize でビルドしてから適用（Namespace 注入 + 順序保証）
-kubectl apply -k k8s/
-```
-
-`kustomization.yaml` の `namespace` フィールドで Namespace を一括注入するため、個々のマニフェストに `namespace:` を書く必要がありません。
-
-```yaml
-# k8s/kustomization.yaml
-namespace: hello-k8s-logging    # ← 全リソースに注入される
-resources:
-  - namespace.yaml
-  - configmap.yaml
-  - deployment-blue.yaml
-  - ...
-```
-
-### Liveness / Readiness Probe
-
-Pod のヘルスチェックには 2 種類の Probe を使います。
-
-| Probe | 役割 | 失敗時の動作 |
-|-------|------|-------------|
-| Liveness | コンテナが生きているか | Pod を再起動 |
-| Readiness | トラフィックを受ける準備ができているか | Service のエンドポイントから除外 |
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 80
-  initialDelaySeconds: 3
-  periodSeconds: 10
-readinessProbe:
-  httpGet:
-    path: /healthz
-    port: 80
-  initialDelaySeconds: 1
-  periodSeconds: 5
-```
-
-#### Self-healing を体験する
-
-Liveness Probe が失敗すると K8s が自動で Pod を再起動します。
-
-```bash
-# Pod 名を取得
-POD=$(kubectl get pods -n hello-k8s-logging -l variant=blue -o jsonpath='{.items[0].metadata.name}')
-
-# nginx を停止して Liveness Probe を失敗させる
-kubectl exec -n hello-k8s-logging $POD -c web-server -- nginx -s stop
-
-# Pod の再起動を観察（RESTARTS カウントが増える）
-kubectl get pods -n hello-k8s-logging -w
-```
-
 ### サイドカーパターンとログ収集
 
 サイドカーパターンでは、アプリケーションコンテナと同じ Pod 内にログ収集コンテナを配置します。
-
-```
-┌─ Pod ──────────────────────────────────┐
-│                                         │
-│  [web-server]                           │
-│    nginx → /var/log/nginx/access.log    │
-│              ↓ (emptyDir 共有ボリューム) │
-│  [log-collector]                        │
-│    Fluent Bit ← tail access.log        │
-│              ↓                          │
-│           stdout (kubectl logs で確認)  │
-└─────────────────────────────────────────┘
-```
 
 #### なぜ Fluent Bit の設定に ConfigMap を使うのか
 
